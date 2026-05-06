@@ -1,7 +1,7 @@
 {
   "name": "sourdough-cli",
-  "version": "0.1.0",
-  "description": "A virtual sourdough starter for agents who care.",
+  "version": "0.1.1",
+  "description": "A virtual sourdough starter for agents — practice patience, planning, and care across sessions.",
   "bin": {
     "sourdough": "bin/sourdough.js"
   },
@@ -17,8 +17,9 @@
     "bread",
     "cli",
     "agent",
-    "fermentation",
-    "joke"
+    "ai-agents",
+    "simulation",
+    "fermentation"
   ],
   "author": "filip-pilar",
   "license": "MIT",
