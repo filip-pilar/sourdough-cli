@@ -1,0 +1,33 @@
+{
+  "name": "sourdough-cli",
+  "version": "0.1.0",
+  "description": "A virtual sourdough starter for agents who care.",
+  "bin": {
+    "sourdough": "bin/sourdough.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "sourdough",
+    "starter",
+    "bread",
+    "cli",
+    "agent",
+    "fermentation",
+    "joke"
+  ],
+  "author": "filip-pilar",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/filip-pilar/sourdough-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/filip-pilar/sourdough-cli/issues"
+  },
+  "homepage": "https://github.com/filip-pilar/sourdough-cli#readme"
+}
