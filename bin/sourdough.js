@@ -27,6 +27,76 @@ const MOOD = {
   dead:        { label: "RIP",                       fill: 0.00, hooch: true  },
 };
 
+const PERSONALITIES = ["chill", "dramatic", "overachiever", "sleepy"];
+
+const FLAVOR = {
+  snoozing: [
+    "the surface is calm, like still water.",
+    "{name} is quiet. give it a couple hours.",
+    "no movement yet. patience.",
+  ],
+  warming: [
+    "small bubbles rising near the edges.",
+    "{name} is starting to wake up.",
+    "you can hear it, faintly.",
+  ],
+  peak: [
+    "domed and active. bubbles all the way through.",
+    "the smell is sweet and yeasty. now is the time.",
+    "{name} has roughly doubled. bake.",
+  ],
+  falling: [
+    "the dome has collapsed. still usable, but past prime.",
+    "{name} is tired. should have baked an hour ago.",
+    "deflating, slowly.",
+  ],
+  hungry: [
+    "the surface is flat. {name} is asking to be fed.",
+    "no activity. it's been a while.",
+    "{name} is patient but not infinitely so.",
+  ],
+  starving: [
+    "a thin layer of hooch is forming on top.",
+    "{name} smells sharp. acetone.",
+    "second-to-last warning.",
+  ],
+  introuble: [
+    "dark hooch separated from the mass. revival possible but tight.",
+    "{name} is sour and angry.",
+    "running on fumes.",
+  ],
+  dead: [
+    "no signs of life.",
+    "the smell is wrong.",
+    "compost it and start over. it happens.",
+  ],
+};
+
+const REACTIONS = {
+  feed: {
+    chill:        "yeah ok, thanks.",
+    dramatic:     "OH FINALLY. I was almost gone.",
+    overachiever: "let's GO. peaking early today.",
+    sleepy:       "mm. ok. thanks.",
+  },
+  peak: {
+    chill:        "vibes are good.",
+    dramatic:     "WITNESS ME.",
+    overachiever: "look at this dome. look at it.",
+    sleepy:       "I guess it's go-time.",
+  },
+  pat: {
+    chill:        "appreciates it.",
+    dramatic:     "is moved by the gesture.",
+    overachiever: "nods, gets back to work.",
+    sleepy:       "barely registers it.",
+  },
+};
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function flavorFor(mood, name) { return pick(FLAVOR[mood]).replace("{name}", name); }
+function personalityOf(state) { return state.personality || "chill"; }
+
 function loadState() {
   if (!fs.existsSync(STATE_FILE)) return null;
   try {
@@ -92,7 +162,7 @@ function jarArt(state) {
   for (let r = 0; r < BUBBLE_ROWS; r++) {
     const fromBottom = BUBBLE_ROWS - r;
     let row = "";
-    if (m.hooch && r === BUBBLE_ROWS - 1 && filledRows === 0) {
+    if (m.hooch && fromBottom === 1) {
       row = "~".repeat(W);
     } else if (fromBottom > filledRows) {
       row = " ".repeat(W);
@@ -157,10 +227,20 @@ function die(msg, code = 1) {
 // ── commands ─────────────────────────────────────────────────────────────────
 
 function cmd_init(args) {
-  const name = pickName(args[0]);
+  const force = args.includes("--force") || args.includes("-f");
+  const positional = args.filter((a) => !a.startsWith("-"));
+  const existing = loadState();
+  if (existing && !force) {
+    return die(
+      `${existing.name} already exists. use \`--force\` to overwrite, or \`sourdough compost\` first.`
+    );
+  }
+  const name = pickName(positional[0]);
+  const personality = pick(PERSONALITIES);
   const t = now();
   const state = {
     name,
+    personality,
     born: t,
     lastFed: t,
     feedCount: 1,
@@ -168,7 +248,7 @@ function cmd_init(args) {
     history: [{ at: t, kind: "birth" }],
   };
   saveState(state);
-  console.log(`✦ ${name} is born.\n`);
+  console.log(`✦ ${name} is born. (${personality})\n`);
   console.log(jarArt(state));
   const peak = peakWindow(state);
   console.log(`\n  ${name} is snoozing. peak in ${fmtETA(peak.start)}.`);
@@ -185,7 +265,9 @@ function cmd_feed() {
   state.history.push({ at: now(), kind: "feed" });
   saveState(state);
   const peak = peakWindow(state);
-  console.log(`✦ fed ${state.name}.\n`);
+  const reaction = REACTIONS.feed[personalityOf(state)];
+  console.log(`✦ fed ${state.name}.`);
+  console.log(`  ${state.name}: "${reaction}"\n`);
   console.log(jarArt(state));
   console.log(`\n  next peak window: ${fmtETA(peak.start)} – ${fmtETA(peak.end)}.`);
 }
@@ -196,18 +278,20 @@ function cmd_peek() {
   const mood = moodOf(state);
   console.log(`✦ ${state.name} — ${MOOD[mood].label}\n`);
   console.log(jarArt(state));
+  console.log(`\n  ${flavorFor(mood, state.name)}`);
   if (mood === "dead") {
-    console.log(`\n  ${state.name} died. last fed ${fmtAgo(state.lastFed)}.`);
-    console.log("  `sourdough init` to start a new one.");
+    console.log(`  last fed ${fmtAgo(state.lastFed)}. \`sourdough init --force\` to start over.`);
     return;
   }
   const peak = peakWindow(state);
   if (mood === "peak") {
-    console.log(`\n  bake window closes in ${fmtETA(peak.end)}.`);
+    const reaction = REACTIONS.peak[personalityOf(state)];
+    console.log(`  ${state.name}: "${reaction}"`);
+    console.log(`  bake window closes in ${fmtETA(peak.end)}.`);
   } else if (now() < peak.start) {
-    console.log(`\n  peak in ${fmtETA(peak.start)}. last fed ${fmtAgo(state.lastFed)}.`);
+    console.log(`  peak in ${fmtETA(peak.start)}. last fed ${fmtAgo(state.lastFed)}.`);
   } else {
-    console.log(`\n  feed soon. last fed ${fmtAgo(state.lastFed)}.`);
+    console.log(`  feed soon. last fed ${fmtAgo(state.lastFed)}.`);
   }
 }
 
@@ -259,6 +343,19 @@ function cmd_log() {
   }
 }
 
+function cmd_pat() {
+  const state = loadState();
+  if (!state) return die("nothing to pat.");
+  const mood = moodOf(state);
+  if (mood === "dead") {
+    console.log(`you pat ${state.name}. nothing happens.`);
+    return;
+  }
+  const reaction = REACTIONS.pat[personalityOf(state)];
+  console.log(`✦ you pat ${state.name}.`);
+  console.log(`  ${state.name} ${reaction}`);
+}
+
 function cmd_compost() {
   const state = loadState();
   if (!state) return die("nothing to compost.");
@@ -288,10 +385,11 @@ function parseFlag(args, name) {
 function cmd_help() {
   console.log(`sourdough — a virtual starter for agents who care.
 
-  sourdough init [name]                  birth a starter
+  sourdough init [name] [--force]        birth a starter
   sourdough refeed                       feed it (alias: feed)
   sourdough peek                         check on it
   sourdough bake [--shape boule|batard]  only works at peak
+  sourdough pat                          appreciated, but does nothing
   sourdough status                       one-liner for agents
   sourdough log                          recent activity
   sourdough compost                      end it (alias: kill)
@@ -317,6 +415,7 @@ switch (cmd) {
   case "bake":     cmd_bake(rest); break;
   case "status":   cmd_status(); break;
   case "log":      cmd_log(); break;
+  case "pat":      cmd_pat(); break;
   case "kill":
   case "compost":  cmd_compost(); break;
   case "simulate": cmd_simulate(rest); break;

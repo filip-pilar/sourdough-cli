@@ -50,6 +50,7 @@ sourdough bake             # only at peak
 | `refeed` (alias: `feed`) | feed the starter; resets peak window |
 | `peek` | inspect the jar — bubble level, mood, peak ETA |
 | `bake [--shape boule\|batard]` | only works during the peak window |
+| `pat` | appreciated, but does nothing |
 | `status` | machine-readable one-liner for agent context |
 | `log` | recent activity |
 | `compost` (alias: `kill`) | end it |

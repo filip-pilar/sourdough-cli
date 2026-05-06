@@ -1,6 +1,6 @@
 {
   "name": "sourdough-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A virtual sourdough starter for agents — practice patience, planning, and care across sessions.",
   "bin": {
     "sourdough": "bin/sourdough.js"
